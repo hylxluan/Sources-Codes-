@@ -1,0 +1,448 @@
+import javazoom.jl.decoder.JavaLayerException;
+import javazoom.jl.player.Player;
+import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.SourceDataLine;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JToggleButton;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.Image;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+public class Main {
+    public static void main(String[] args) throws IOException {
+        new LyriumPlayer().setVisible(true);
+    }
+    private static class LyriumPlayer extends JFrame {
+        private JPanel panelFrame, menuPanel;
+        private JButton continueButton, pauseButton;
+        private JToggleButton sequenceButton, randomButton, backButton, advanceButton, rptOneButton, disableRptBttn;
+        private JLabel panelLBL, playLabel, playHelp, pauseLabel,
+                pauseHelp, advanceLabel, advanceHelp, backLabel,
+                backHelp, sequenceLabel, sequenceHelp, randomLabel,
+                randomHelp, description, guideImg, supImg, supTxt;
+        private final JMenuBar menuBar;
+
+        private LyriumPlayer() throws IOException {
+            super();
+            super.setTitle("Lyrium");
+            super.setSize(new Dimension(720, 500));
+            super.setLayout(new FlowLayout());
+            super.setResizable(false);
+            super.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            super.setIconImage(new ImageIcon(frameImg("images/Titlebar.png")).getImage());
+            this.menuBar = new JMenuBar();
+            super.setJMenuBar(this.menuBar);
+            this.setPanel();
+            super.add(this.panelFrame);
+            this.setMenu();
+        }
+        private Image frameImg(String path) throws IOException {
+            return ImageIO.read(Objects.requireNonNull(getClass().getResource(path)));
+        }
+        private void setPanel() throws IOException {
+            this.panelFrame = new JPanel(null);
+            this.panelFrame.setPreferredSize(new Dimension(720, 500));
+            this.panelFrame.setBackground(Color.white);
+            this.setLabel();
+            this.setButtonSystem();
+            this.panelFrame.add(this.panelLBL);
+            this.panelFrame.add(this.continueButton);
+            this.panelFrame.add(this.pauseButton);
+            this.panelFrame.add(this.advanceButton);
+            this.panelFrame.add(this.backButton);
+            this.panelFrame.add(this.randomButton);
+            this.panelFrame.add(this.sequenceButton);
+            this.panelFrame.add(this.rptOneButton);
+            this.panelFrame.add(this.disableRptBttn);
+        }
+        private void setLabel() throws IOException {
+            this.panelLBL = new JLabel(new ImageIcon(getRscrcPack("images/Audio.png", 340, 340)));
+            this.panelLBL.setPreferredSize(new Dimension(330, 70));
+            this.panelLBL.setBounds(180, 2, 340, 340);
+        }
+        private void setBttnGuidePnl() throws IOException {
+            this.menuPanel = new JPanel(null);
+            this.menuPanel.setPreferredSize(new Dimension(520, 300));
+            this.menuPanel.setBackground(Color.white);
+            setBttnGuideLabel();
+            this.menuPanel.add(this.playLabel);
+            this.menuPanel.add(this.playHelp);
+            this.menuPanel.add(this.pauseLabel);
+            this.menuPanel.add(this.pauseHelp);
+            this.menuPanel.add(this.advanceLabel);
+            this.menuPanel.add(this.advanceHelp);
+            this.menuPanel.add(this.backLabel);
+            this.menuPanel.add(this.backHelp);
+            this.menuPanel.add(this.sequenceLabel);
+            this.menuPanel.add(this.sequenceHelp);
+            this.menuPanel.add(this.randomLabel);
+            this.menuPanel.add(this.randomHelp);
+        }
+        private void setBttnGuideLabel() throws IOException {
+            createBttnGuideLbls();
+            // playHelp label customs
+            this.playLabel.setBounds(17, 10, 26, 26);
+            this.playHelp.setText("-> Plays or resume song.");
+            this.playHelp.setBounds(49, 14, 300, 20);
+            this.playHelp.setFont(new Font("Verdana", Font.PLAIN, 15));
+            // playHelp label customs
+            this.pauseLabel.setBounds(18, 50, 26, 26);
+            this.pauseHelp.setText("-> Pauses the song.");
+            this.pauseHelp.setBounds(51, 54, 300, 20);
+            this.pauseHelp.setFont(new Font("Verdana", Font.PLAIN, 15));
+            // advanceHelp label customs
+            this.advanceLabel.setBounds(20, 90, 23, 23);
+            this.advanceHelp.setText("-> Keep toggled until the song end up to skip next one.");
+            this.advanceHelp.setBounds(51, 90, 450, 20);
+            this.advanceHelp.setFont(new Font("Verdana", Font.PLAIN, 15));
+            // backHelp label customs
+            this.backLabel.setBounds(20, 130, 23, 23);
+            this.backHelp.setText("<html>-> Keep toggled until the song end up to go back to the<br/>previous one.");
+            this.backHelp.setBounds(52, 131, 450, 40);
+            this.backHelp.setFont(new Font("Verdana", Font.PLAIN, 15));
+            // sequenceHelp label customs
+            this.sequenceLabel.setBounds(16, 176, 33, 33);
+            this.sequenceHelp.setText("<html>-> Switch between repeat all, repeat one and dont repeat.<br/>Keep toggled each one.");
+            this.sequenceHelp.setBounds(54, 174, 450, 40);
+            this.sequenceHelp.setFont(new Font("Verdana", Font.PLAIN, 15));
+            // randomHelp label customs
+            this.randomLabel.setBounds(20, 216, 30, 30);
+            this.randomHelp.setText("-> Keep toggled if you want to random sequence.");
+            this.randomHelp.setBounds(53, 220, 450, 20);
+            this.randomHelp.setFont(new Font("Verdana", Font.PLAIN, 15));
+        }
+        private void createBttnGuideLbls() throws IOException {
+            this.playLabel = new JLabel(new ImageIcon(getRscrcPack("images/continue.png", 26, 26)));
+            this.playHelp = new JLabel();
+            this.pauseLabel = new JLabel(new ImageIcon(getRscrcPack("images/pause.png", 26, 26)));
+            this.pauseHelp = new JLabel();
+            this.advanceLabel = new JLabel(new ImageIcon(getRscrcPack("images/advance.png", 23, 23)));
+            this.advanceHelp = new JLabel();
+            this.backLabel = new JLabel(new ImageIcon(getRscrcPack("images/back.png", 23, 23)));
+            this.backHelp = new JLabel();
+            this.sequenceLabel = new JLabel(new ImageIcon(getRscrcPack("images/sequence.png", 33, 33)));
+            this.sequenceHelp = new JLabel();
+            this.randomLabel = new JLabel(new ImageIcon(getRscrcPack("images/random.png", 30, 30)));
+            this.randomHelp = new JLabel();
+        }
+        private void setPlGuidePanel() throws IOException {
+            this.menuPanel = new JPanel(null);
+            this.menuPanel.setPreferredSize(new Dimension(900, 445));
+            this.menuPanel.setBackground(Color.white);
+            this.setPlGuideLabel();
+            this.menuPanel.add(this.description);
+            this.menuPanel.add(this.guideImg);
+        }
+        private void setPlGuideLabel() throws IOException {
+            this.description = new JLabel();
+            this.guideImg = new JLabel(new ImageIcon(getRscrcPack("images/Guide.png", 737, 317)));
+            // description label customs
+            this.description.setText("<html> > Put the Lyrium at the current directory of the playlist and open it as showed below. The Lyrium will automatically select all songs .mp3 and .wav to play.");
+            this.description.setBounds(13, 2, 485, 85);
+            this.description.setFont(new Font("Verdana", Font.PLAIN, 15));
+            // guide img customs
+            this.guideImg.setBounds(5, 82, 737, 317);
+        }
+        private void setSupPanel() throws IOException {
+            this.menuPanel = new JPanel(null);
+            this.menuPanel.setPreferredSize(new Dimension(500, 250));
+            this.menuPanel.setBackground(Color.white);
+            setSupLabel();
+            this.menuPanel.add(this.supTxt);
+            this.menuPanel.add(this.supImg);
+        }
+        private void setSupLabel() throws IOException {
+            this.supTxt = new JLabel();
+            this.supImg = new JLabel(new ImageIcon(getRscrcPack("images/email.png", 38, 38)));
+            // image support customs
+            this.supImg.setBounds(170, 74, 38, 38);
+            // text support customs
+            this.supTxt.setText("> Contact me on        by: suplyrium@gmail.com");
+            this.supTxt.setBounds(13, 50, 450, 80);
+            this.supTxt.setFont(new Font("Verdana", Font.PLAIN, 18));
+        }
+        private void setMenu() {
+            JMenu helpBar = new JMenu("help");
+            JMenu howUse = new JMenu("How to use");
+            this.menuBar.add(helpBar);
+            JMenuItem buttonsGuide = new JMenuItem("Buttons Guide");
+            JMenuItem support = new JMenuItem("Support");
+            JMenuItem howToPlay = new JMenuItem("Play Guide");
+            helpBar.add(support);
+            helpBar.add(howUse);
+            howUse.add(buttonsGuide);
+            howUse.add(howToPlay);
+            buttonsGuide.addActionListener(e -> {
+                try {
+                    JFrame bttnsGuide = new JFrame("Buttons Guide");
+                    bttnsGuide.setSize(new Dimension(520, 300));
+                    bttnsGuide.setLayout(new FlowLayout());
+                    bttnsGuide.setResizable(false);
+                    bttnsGuide.setVisible(true);
+                    bttnsGuide.setIconImage(new ImageIcon(frameImg("images/help.png")).getImage());
+                    this.setBttnGuidePnl();
+                    bttnsGuide.add(this.menuPanel);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            });
+            howToPlay.addActionListener(e -> {
+                try {
+                    JFrame plGuide = new JFrame("How to play");
+                    plGuide.setSize(new Dimension(900, 445));
+                    plGuide.setLayout(new FlowLayout());
+                    plGuide.setResizable(false);
+                    plGuide.setVisible(true);
+                    plGuide.setIconImage(new ImageIcon(frameImg("images/help.png")).getImage());
+                    this.setPlGuidePanel();
+                    plGuide.add(this.menuPanel);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            });
+            support.addActionListener(e -> {
+                try {
+                    JFrame supFrame = new JFrame("Support Contact");
+                    supFrame.setSize(new Dimension(500, 250));
+                    supFrame.setLayout(new FlowLayout());
+                    supFrame.setResizable(false);
+                    supFrame.setVisible(true);
+                    supFrame.setIconImage(new ImageIcon(frameImg("images/support.png")).getImage());
+                    this.setSupPanel();
+                    supFrame.add(this.menuPanel);
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            });
+        }
+        private void setButtonSystem() throws IOException {
+            AtomicBoolean toggleSeq = new AtomicBoolean(true);
+            AtomicBoolean toggleRnd = new AtomicBoolean();
+            AtomicBoolean toggleAdv = new AtomicBoolean();
+            AtomicBoolean toggleBack = new AtomicBoolean();
+            AtomicBoolean toggleRptOne = new AtomicBoolean();
+            AtomicBoolean toggle_rpt_one_song = new AtomicBoolean();
+            // Creating back button
+            this.backButton = new JToggleButton(new ImageIcon(getRscrcPack("images/back.png", 70, 65)));
+            this.backButton.setBackground(Color.white);
+            this.backButton.setBorderPainted(false);
+            this.backButton.setBounds(125, 350, 70, 58);
+            // Creating advance button
+            this.advanceButton = new JToggleButton(new ImageIcon(getRscrcPack("images/advance.png", 70, 65)));
+            this.advanceButton.setBackground(Color.white);
+            this.advanceButton.setBorderPainted(false);
+            this.advanceButton.setBounds(525, 350, 70, 65);
+            // Creating random button
+            this.randomButton = new JToggleButton(new ImageIcon(getRscrcPack("images/random.png", 70, 79 )));
+            this.randomButton.setBackground(Color.white);
+            this.randomButton.setBorderPainted(false);
+            this.randomButton.setBounds(622, 347, 70, 69);
+            //Creating pause button
+            this.pauseButton = new JButton(new ImageIcon(getRscrcPack("images/pause.png", 70, 65)));
+            this.pauseButton.setBackground(Color.white);
+            this.pauseButton.setBorderPainted(false);
+            this.pauseButton.setContentAreaFilled(false);
+            // Creating continue button
+            this.continueButton = new JButton(new ImageIcon(getRscrcPack("images/continue.png", 70, 65)));
+            this.continueButton.setBackground(Color.white);
+            this.continueButton.setBorderPainted(false);
+            this.continueButton.setBounds(320, 350, 70, 65);
+            this.continueButton.setContentAreaFilled(false);
+            //creating sequence button
+            this.sequenceButton = new JToggleButton(new ImageIcon(getRscrcPack("images/sequence.png", 80, 85)));
+            this.sequenceButton.setBackground(Color.white);
+            this.sequenceButton.setBorderPainted(false);
+            this.sequenceButton.setBounds(20, 340, 80, 85);
+            this.sequenceButton.setContentAreaFilled(false);
+            // creating repeat one button
+            this.rptOneButton = new JToggleButton(new ImageIcon(getRscrcPack("images/sequence.png", 80, 85)));
+            this.rptOneButton.setBounds(35, 355, 80, 85);
+            this.rptOneButton.setBackground(Color.white);
+            this.rptOneButton.setBorderPainted(false);
+            this.rptOneButton.setContentAreaFilled(false);
+            // disable sequence/repeat button
+            this.disableRptBttn = new JToggleButton(new ImageIcon(getRscrcPack("images/repeatOne.png", 80, 85)));
+            this.disableRptBttn.setBounds(35, 355, 80, 85);
+            this.disableRptBttn.setBackground(Color.white);
+            this.disableRptBttn.setBorderPainted(false);
+            this.disableRptBttn.setContentAreaFilled(false);
+            // disable click scheme
+            this.disableRptBttn.setVisible(false);
+            this.disableRptBttn.setEnabled(false);
+            this.rptOneButton.setEnabled(false);
+            this.rptOneButton.setVisible(false);
+            this.randomButton.setEnabled(false);
+            this.advanceButton.setEnabled(false);
+            this.backButton.setEnabled(false);
+            this.sequenceButton.setEnabled(false);
+            // Preparing Threads
+            List<String> fileArray = new ArrayList<>(Arrays.asList(Objects.requireNonNull(new File(System.getProperty("user.dir")).list())));
+            List<String> newArray = fileArray.stream().filter(f -> getExtension(f).equals(".mp3") || getExtension(f).equals(".wav")).toList();
+            Thread threadingSong = new Thread(() -> {
+                while (toggleSeq.get() || toggle_rpt_one_song.get() || toggleRptOne.get()) {
+                    for (int i = 0; i < newArray.size(); ++i) {
+                        playsong(System.getProperty("user.dir") + File.separator + newArray.get(i));
+                        if (toggleRnd.get()) i = new Random().nextInt(newArray.size());
+                        if (toggleRptOne.get()) i -= 1;
+                        if (toggleAdv.get()) i += 1;
+                        if (toggleBack.get()) i -= 2;
+                        if (i > newArray.size()) i = newArray.size() -1;
+                        if (i < 0) i = newArray.size() - 1;
+                        if (i == newArray.size()) i -= 1;
+                        if (!rptOneButton.isSelected()) {
+                            toggle_rpt_one_song.set(false);
+                            toggleRptOne.set(false);
+                        }
+                        if (!sequenceButton.isSelected()) toggleSeq.set(false);
+                    }
+                }
+            });
+            // action listeners
+            this.continueButton.addActionListener(e -> {
+                continueButton.setEnabled(false);
+                continueButton.setVisible(false);
+                pauseButton.setEnabled(true);
+                pauseButton.setVisible(true);
+                pauseButton.setBounds(320, 350, 70, 65);
+                if (!toggleRptOne.get()) {
+                    randomButton.setEnabled(true);
+                    advanceButton.setEnabled(true);
+                    backButton.setEnabled(true);
+                    sequenceButton.setEnabled(true);
+                }
+                if (newArray.isEmpty()) {
+                    JOptionPane.showMessageDialog(null, "There's no song here :(", "EMPTY PLAYLIST", JOptionPane.WARNING_MESSAGE);
+                    System.exit(1);
+                }
+                try {
+                    if (threadingSong.getState() == Thread.State.TIMED_WAITING) {
+                        threadingSong.resume();
+                    } else threadingSong.start();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "Restart the Lyrium to play your songs!!", "Restart", JOptionPane.WARNING_MESSAGE);
+                    System.exit(0);
+                }
+            });
+            // pause button action listener
+            this.pauseButton.addActionListener(e -> {
+                pauseButton.setEnabled(false);
+                pauseButton.setVisible(false);
+                continueButton.setEnabled(true);
+                continueButton.setVisible(true);
+                continueButton.setBounds(320, 350, 70, 65);
+                threadingSong.suspend();
+            });
+            // sequence button action listener
+            this.sequenceButton.addActionListener(e -> {
+                toggleSeq.set(sequenceButton.isSelected());
+                this.rptOneButton.setEnabled(true);
+                this.sequenceButton.setVisible(false);
+                this.rptOneButton.setVisible(true);
+            });
+            // random button action listener
+            this.randomButton.addActionListener(e -> toggleRnd.set(randomButton.isSelected()));
+            // advance and back button action listener
+            this.advanceButton.addActionListener(e -> toggleAdv.set(advanceButton.isSelected()));
+            this.backButton.addActionListener(e -> toggleBack.set(backButton.isSelected()));
+            // repeat One action listener
+            this.rptOneButton.addActionListener(e -> {
+                toggleRptOne.set(rptOneButton.isSelected());
+                this.sequenceButton.doClick();
+                this.rptOneButton.setVisible(false);
+                this.disableRptBttn.setVisible(true);
+                this.disableRptBttn.setEnabled(true);
+                if (this.randomButton.isSelected()) this.randomButton.doClick();
+                if (this.backButton.isSelected()) this.backButton.doClick();
+                if (this.advanceButton.isSelected()) this.advanceButton.doClick();
+                if (newArray.size() == 1) toggle_rpt_one_song.set(true);
+                this.randomButton.setEnabled(false);
+                this.backButton.setEnabled(false);
+                this.advanceButton.setEnabled(false);
+            });
+            this.disableRptBttn.addActionListener(e -> {
+                this.rptOneButton.doClick();
+                this.sequenceButton.doClick();
+                this.sequenceButton.setVisible(true);
+                this.disableRptBttn.setVisible(false);
+                this.sequenceButton.setEnabled(true);
+                if (!sequenceButton.isSelected() && !rptOneButton.isSelected()) {
+                    this.rptOneButton.setVisible(false);
+                    this.randomButton.setEnabled(true);
+                    this.backButton.setEnabled(true);
+                    this.advanceButton.setEnabled(true);
+                }
+            });
+        }
+        Image getRscrcPack(String path, int width, int heigh) throws IOException {
+            return ImageIO.read(Objects.requireNonNull(getClass().getResource(path))).getScaledInstance(width, heigh, Image.SCALE_SMOOTH);
+        }
+        // Internal Player System
+        private void playsong(String filePath) throws RuntimeException {
+            if (getExtension(filePath).equals(".wav")) {
+                try {
+                    AudioInputStream audioIn = AudioSystem.getAudioInputStream(new File(filePath));
+                    AudioFormat customFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100, 16, 2, 4, audioIn.getFormat().getFrameRate(), false);
+                    SourceDataLine dataline = AudioSystem.getSourceDataLine(customFormat);
+                    if (dataline != null) {
+                        dataline.open(customFormat);
+                        dataline.start();
+                        AudioInputStream converted = AudioSystem.getAudioInputStream(customFormat, audioIn);
+                        int bytesRd = 0;
+                        final byte[] buffer = new byte[1024];
+                        while ((bytesRd = converted.read(buffer, 0, buffer.length)) != -1) {
+                            dataline.write(buffer, 0, buffer.length);
+                        }
+                        dataline.drain();
+                        dataline.close();
+                        audioIn.close();
+                    }
+                } catch (IOException | UnsupportedAudioFileException | LineUnavailableException e) {
+                    JOptionPane.showMessageDialog(null, "File not found or unsopported format!", "WARNING", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+            else if (getExtension(filePath).equals(".mp3")) {
+                try {
+                    Player mp3Player = new Player(new BufferedInputStream(new FileInputStream(filePath)));
+                    mp3Player.play();
+                } catch (JavaLayerException | FileNotFoundException e) {
+                    JOptionPane.showMessageDialog(null, "Audio format not supported.", "Unsupported Format", JOptionPane.WARNING_MESSAGE);
+                }
+            } else JOptionPane.showMessageDialog(null, "Audio format not supported.", "Unsupported Format", JOptionPane.WARNING_MESSAGE);
+        }
+        private static String getExtension(String path) {
+            int firstSlice = (path.lastIndexOf("\\") == -1 ? path.lastIndexOf("\\") : path.lastIndexOf("/"));
+            String getDot = (firstSlice == -1 ? path.substring(path.lastIndexOf("/") + 1) : path.substring(path.lastIndexOf(".")));
+            try {
+                return (!path.equals("") ? getDot.substring(getDot.lastIndexOf(".")) : "");}
+            catch (StringIndexOutOfBoundsException excpt) {
+                return "";
+            }
+        }
+    }
+}
